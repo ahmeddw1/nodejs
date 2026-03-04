@@ -1,29 +1,33 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const { exec } = require('child_process');
-const fs = require('fs');
+const express = require("express");
+const { exec } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+
 const app = express();
-const port = process.env.PORT || 3000;
+app.use(express.json());
 
-app.use(bodyParser.json());
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*'); // allow frontend
-  res.setHeader('Access-Control-Allow-Methods', 'POST');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  next();
-});
+app.post("/run", (req, res) => {
+  const { code } = req.body;
 
-app.post('/run-node', (req, res) => {
-  const code = req.body.code;
-  const tempFile = `/tmp/tempNodeCode.js`;
+  const id = crypto.randomBytes(6).toString("hex");
+  const dir = path.join(__dirname, id);
+  fs.mkdirSync(dir);
 
-  fs.writeFileSync(tempFile, code);
+  const file = "index.js";
+  fs.writeFileSync(path.join(dir, file), code);
 
-  exec(`node ${tempFile}`, (error, stdout, stderr) => {
-    fs.unlinkSync(tempFile);
-    if (error || stderr) return res.json({ error: stderr || error.message });
-    return res.json({ output: stdout });
+  exec(`node ${file}`, { cwd: dir, timeout: 8000 }, (err, stdout, stderr) => {
+    fs.rmSync(dir, { recursive: true, force: true });
+
+    if (err || stderr) {
+      return res.json({ error: stderr || err.message });
+    }
+
+    res.json({ output: stdout });
   });
 });
 
-app.listen(port, () => console.log(`Node backend running on port ${port}`));
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server running...");
+});
