@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const { exec } = require("child_process");
 const fs = require("fs");
@@ -8,6 +7,7 @@ const crypto = require("crypto");
 const app = express();
 app.use(express.json());
 
+// POST /run → execute Node.js code
 app.post("/run", (req, res) => {
   const { code } = req.body;
 
@@ -25,6 +25,11 @@ app.post("/run", (req, res) => {
 
     res.json({ output: stdout });
   });
+});
+
+// Optional GET /run → sanity check
+app.get("/run", (req, res) => {
+  res.send("Node backend is working! Use POST /run to execute code.");
 });
 
 app.listen(process.env.PORT || 3000, () => {
