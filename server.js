@@ -1,3 +1,4 @@
+// server.js
 const express = require("express");
 const { exec } = require("child_process");
 const fs = require("fs");
@@ -11,7 +12,7 @@ app.post("/run", (req, res) => {
   const { code } = req.body;
 
   const id = crypto.randomBytes(6).toString("hex");
-  const dir = path.join(__dirname, id);
+  const dir = path.join("/tmp", id);
   fs.mkdirSync(dir);
 
   const file = "index.js";
@@ -20,9 +21,7 @@ app.post("/run", (req, res) => {
   exec(`node ${file}`, { cwd: dir, timeout: 8000 }, (err, stdout, stderr) => {
     fs.rmSync(dir, { recursive: true, force: true });
 
-    if (err || stderr) {
-      return res.json({ error: stderr || err.message });
-    }
+    if (err || stderr) return res.json({ error: stderr || err.message });
 
     res.json({ output: stdout });
   });
